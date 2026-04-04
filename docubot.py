@@ -8,7 +8,11 @@ Core DocuBot class responsible for:
 """
 
 import os
+import string
 import glob
+
+STOP_WORDS = {"which", "the", "all", "is", "are", "returns", "a", "an",
+              "what", "how", "does", "do", "i", "in", "of", "to", "for"}
 
 class DocuBot:
     def __init__(self, docs_folder="docs", llm_client=None):
@@ -63,8 +67,40 @@ class DocuBot:
         Keep this simple: split on whitespace, lowercase tokens,
         ignore punctuation if needed.
         """
+
         index = {}
+
         # TODO: implement simple indexing
+
+        # iterate through each document (filename, text)
+        for filename, text in documents:
+
+            # skip empty documents
+            if not text:
+                continue
+            
+            # normalize text
+            # use set to avoid duplicate words 
+            words = set(text.lower().split())
+
+            for word in words:
+
+                # remove punctuation from word for better matching
+                word = word.strip(string.punctuation)
+
+                # skip empty words after cleaning
+                if not word:
+                    continue
+                
+                # handle when word is not in index yet, initialize with empty list
+                if word not in index:
+                    index[word] = []
+
+                # add document to index for this word if not already present
+                if filename not in index[word]:
+                    index[word].append(filename)
+
+        # return completed inverted index
         return index
 
     # -----------------------------------------------------------
@@ -81,8 +117,37 @@ class DocuBot:
         - Count how many appear in the text
         - Return the count as the score
         """
+
         # TODO: implement scoring
-        return 0
+        if not query:
+            return 0
+        
+        # normalize query and split into words
+        query_words = query.lower().split()
+
+        # normalize text for substring matching
+        text_lower = text.lower()
+
+        score = 0
+
+        # iterate through every word in query
+        for word in query_words:
+
+            # remove punctuation from word for better matching
+            word = word.strip(string.punctuation)
+
+            # skip empty or stop words
+            if not word or word in STOP_WORDS:
+                continue
+
+            # handle when cleaned query word appears in document (substring match catches plurals/variants)
+            if word in text_lower:
+
+                # increment score for each match
+                score += 1
+
+        # return total number of query words that appear in the text as relevance score
+        return score
 
     def retrieve(self, query, top_k=3):
         """
@@ -93,6 +158,55 @@ class DocuBot:
         """
         results = []
         # TODO: implement retrieval logic
+
+        if not query:
+            return results
+
+        # normalize query and split into words
+        query_words = query.lower().split()
+
+
+        # use set to avoid duplicate candidates
+        candidates = set()
+
+        # find candidate documents using inverted index 
+        for word in query_words:
+
+            word = word.strip(string.punctuation)
+
+            # handle when word exists in index (appears in any document)
+            if word in self.index:
+
+                # add documents containing this word to candidates
+                for filename in self.index[word]:
+                    candidates.add(filename)
+
+        # if no candidates found, return empty results
+        if not candidates:
+            return results
+
+        doc_lookup = {filename: text for filename, text in self.documents}
+
+        # score each candidate document
+        scored = []
+
+        for filename in candidates:
+            text = doc_lookup[filename]
+
+            # compute relevance score
+            score = self.score_document(query, text)
+
+            # store score with document info for sorting
+            scored.append((score, filename, text))
+
+        # sort documents by score in descending order
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        # get filename and text for top_k results
+        for score, filename, text in scored:
+            results.append((filename, text))
+
+        # return only top k results
         return results[:top_k]
 
     # -----------------------------------------------------------
