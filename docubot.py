@@ -12,7 +12,7 @@ import string
 import glob
 
 STOP_WORDS = {"which", "the", "all", "is", "are", "returns", "a", "an",
-              "what", "how", "does", "do", "i", "in", "of", "to", "for"}
+              "what", "how", "does", "do", "i", "there", "any"}
 
 class DocuBot:
     def __init__(self, docs_folder="docs", llm_client=None):
@@ -149,6 +149,43 @@ class DocuBot:
         # return total number of query words that appear in the text as relevance score
         return score
 
+    def extract_top_paragraphs(self, query, text, top_n=2):
+
+        # split text into paragraphs using double newlines 
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+        
+        # normalize the query
+        query_words = set(query.lower().split()) - STOP_WORDS
+
+        # store (score, paragraph) pairs
+        scored = []
+
+        for p in paragraphs:
+
+            # normalize paragraph for case-insensitive matching
+            p_lower = p.lower()
+
+            # compute score based on how many query words appear in this paragraph
+            score = sum(1 for w in query_words if w in p_lower)
+
+            # only keep paragraphs that have at least one match
+            if score > 0:
+                scored.append((score, p))
+
+        # sort paragraphs by score in descending order
+        scored.sort(reverse=True)
+
+        # get top n highest scoring paragraphs
+        top = []
+        for _, p in scored[:top_n]:
+            top.append(p)
+
+        if top:
+            return "\n\n".join(top)
+        
+        # return ''if no matches found 
+        return ''
+
     def retrieve(self, query, top_k=3):
         """
         TODO (Phase 1):
@@ -202,9 +239,15 @@ class DocuBot:
         # sort documents by score in descending order
         scored.sort(key=lambda x: x[0], reverse=True)
 
-        # get filename and text for top_k results
+        # get filename and relevant paragraphs for top_k results
         for score, filename, text in scored:
-            results.append((filename, text))
+
+            # guardrail: skip documents with no meaningful keyword matches
+            if score < 2:
+                continue
+
+            snippet = self.extract_top_paragraphs(query, text)
+            results.append((filename, snippet))
 
         # return only top k results
         return results[:top_k]
