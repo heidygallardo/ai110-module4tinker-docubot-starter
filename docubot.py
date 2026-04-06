@@ -151,16 +151,17 @@ class DocuBot:
 
     def extract_top_paragraphs(self, query, text, top_n=2):
 
-        # split text into paragraphs using double newlines 
+        # split text into paragraphs using double newlines
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-        
-        # normalize the query
-        query_words = set(query.lower().split()) - STOP_WORDS
+
+        # normalize the query and strip punctuation from each word
+        raw_words = set(query.lower().split()) - STOP_WORDS
+        query_words = {w.strip(string.punctuation) for w in raw_words} - {""}
 
         # store (score, paragraph) pairs
         scored = []
 
-        for p in paragraphs:
+        for i, p in enumerate(paragraphs):
 
             # normalize paragraph for case-insensitive matching
             p_lower = p.lower()
@@ -170,7 +171,12 @@ class DocuBot:
 
             # only keep paragraphs that have at least one match
             if score > 0:
-                scored.append((score, p))
+                # include the preceding paragraph as heading/context if available
+                if i > 0:
+                    context = paragraphs[i - 1] + "\n\n" + p
+                else:
+                    context = p
+                scored.append((score, context))
 
         # sort paragraphs by score in descending order
         scored.sort(reverse=True)
@@ -242,8 +248,8 @@ class DocuBot:
         # get filename and relevant paragraphs for top_k results
         for score, filename, text in scored:
 
-            # guardrail: skip documents with no meaningful keyword matches
-            if score < 2:
+            # guardrail: skip documents with no keyword matches at all
+            if score < 1:
                 continue
 
             snippet = self.extract_top_paragraphs(query, text)
