@@ -1,10 +1,3 @@
-Add a 5–7 sentence summary to your README covering:
-Core concept students needed to understand
-Where students may struggle
-Where AI was helpful vs misleading
-
-One way you’d guide a student without giving the answer
-
 # TF WEEKLY TASK SUMMARY
 
 Core concepts students need to understand is the difference between naive generation, retrieval mode only and full RAG. 
