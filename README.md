@@ -1,3 +1,25 @@
+Add a 5–7 sentence summary to your README covering:
+Core concept students needed to understand
+Where students may struggle
+Where AI was helpful vs misleading
+
+One way you’d guide a student without giving the answer
+
+# TF WEEKLY TASK SUMMARY
+
+Core concepts students need to understand is the difference between naive generation, retrieval mode only and full RAG. 
+Mainly how retrieval improves accuracy by grounding responses in relevant context. 
+
+Where students may struggle is in implmenting the soring logic and how to add a guardrail to their sysystem. 
+
+AI was helpful when brainstorming approaches and discussing tradeoffs between different approaches. 
+
+However, AI was misleading when generating code, as it sometimes produced overly redundant solutions. 
+
+One way I would guide a student without giving the answer would be by asking them leading questions such as: "Does puncutation
+matter when comparing text?" This way they can think of other factors that might impact their scoring logic and refine their
+approach independently.
+
 # DocuBot
 
 DocuBot is a small documentation assistant that helps answer developer questions about a codebase.  
